@@ -113,12 +113,20 @@
             <label for="opacity">Opacity:</label>
             <input type="range" id="opacity" min="0" max="1" step="0.01" value="0.7">
 
-            <label for="location">Watermark Location:</label>
-            <select id="location">
-                <option value="top-left">Top Left</option>
-                <option value="top-right">Top Right</option>
-                <option value="center">Center</option>
-            </select>
+            <label>Watermark Location (px):</label>
+            <div>
+                <label for="top">Top:</label>
+                <input type="number" id="top" value="20">
+
+                <label for="bottom">Bottom:</label>
+                <input type="number" id="bottom" value="20">
+
+                <label for="left">Left:</label>
+                <input type="number" id="left" value="20">
+
+                <label for="right">Right:</label>
+                <input type="number" id="right" value="20">
+            </div>
 
             <label for="quantity">Quantity:</label>
             <input type="number" id="quantity" value="1" min="1" max="10">
@@ -143,7 +151,10 @@
         const fontSizeInput = document.getElementById("fontSize");
         const fontColorInput = document.getElementById("fontColor");
         const opacityInput = document.getElementById("opacity");
-        const locationInput = document.getElementById("location");
+        const topInput = document.getElementById("top");
+        const bottomInput = document.getElementById("bottom");
+        const leftInput = document.getElementById("left");
+        const rightInput = document.getElementById("right");
         const quantityInput = document.getElementById("quantity");
         const canvas = document.getElementById("canvas");
         const ctx = canvas.getContext("2d");
@@ -160,8 +171,12 @@
             const fontSize = fontSizeInput.value;
             const fontColor = fontColorInput.value;
             const opacity = opacityInput.value;
-            const location = locationInput.value;
             const quantity = quantityInput.value;
+
+            const top = parseInt(topInput.value);
+            const bottom = parseInt(bottomInput.value);
+            const left = parseInt(leftInput.value);
+            const right = parseInt(rightInput.value);
 
             // Clear the canvas and redraw the image
             ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -171,27 +186,12 @@
 
             // Add watermark multiple times
             for (let i = 0; i < quantity; i++) {
-                const x = getWatermarkPosition(location, "x", canvas.width, fontSize, watermarkText);
-                const y = getWatermarkPosition(location, "y", canvas.height, fontSize, watermarkText);
+                const x = left + (i * 50); // Optional spacing between watermarks
+                const y = top + (i * 50);  // Optional spacing between watermarks
 
                 ctx.font = `${fontSize}px ${fontFamily}`;
                 ctx.fillStyle = fontColor;
                 ctx.fillText(watermarkText, x, y);
-            }
-        }
-
-        // Determine watermark position based on the selected location
-        function getWatermarkPosition(location, axis, canvasSize, fontSize, watermarkText) {
-            const padding = 20;
-            switch (location) {
-                case "top-left":
-                    return padding;
-                case "top-right":
-                    return canvasSize - padding - ctx.measureText(watermarkText).width;
-                case "center":
-                    return (canvasSize - ctx.measureText(watermarkText).width) / 2;
-                default:
-                    return padding;
             }
         }
 
@@ -232,7 +232,7 @@
         });
 
         // Update the canvas whenever user changes options
-        [watermarkTextInput, fontFamilyInput, fontSizeInput, fontColorInput, opacityInput, locationInput, quantityInput].forEach(input => {
+        [watermarkTextInput, fontFamilyInput, fontSizeInput, fontColorInput, opacityInput, topInput, bottomInput, leftInput, rightInput, quantityInput].forEach(input => {
             input.addEventListener("input", () => {
                 if (currentImageIndex !== -1) {
                     updateCanvas(selectedImages[currentImageIndex]);
