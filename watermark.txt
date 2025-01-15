@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Watermark Generator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            flex-direction: column;
+        }
+
+        .container {
+            text-align: center;
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            width: 90%;
+            max-width: 600px;
+        }
+
+        h1 {
+            font-size: 24px;
+            margin-bottom: 20px;
+        }
+
+        input, select, button {
+            margin: 10px;
+        }
+
+        input[type="file"] {
+            margin-top: 20px;
+        }
+
+        .image-preview {
+            margin-top: 20px;
+            position: relative;
+        }
+
+        .image-thumbnails {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+            margin-top: 20px;
+        }
+
+        .image-thumbnails img {
+            width: 100px;
+            height: auto;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        canvas {
+            max-width: 100%;
+            border: 1px solid #ccc;
+        }
+
+        button {
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-top: 20px;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Watermark Image Generator</h1>
+
+        <!-- Image Upload Section -->
+        <input type="file" id="imageInput" accept="image/*" multiple webkitdirectory>
+
+        <!-- Watermark Options -->
+        <div class="options">
+            <label for="watermarkText">Watermark Text:</label>
+            <input type="text" id="watermarkText" placeholder="Enter watermark text">
+
+            <label for="fontFamily">Font Family:</label>
+            <select id="fontFamily">
+                <option value="Times New Roman">Times New Roman</option>
+                <option value="Georgia">Georgia</option>
+                <option value="Palatino">Palatino</option>
+                <option value="Garamond">Garamond</option>
+                <option value="Courier New">Courier New</option>
+                <option value="Arial">Arial</option>
+            </select>
+
+            <label for="fontSize">Font Size:</label>
+            <input type="number" id="fontSize" value="40">
+
+            <label for="fontColor">Font Color:</label>
+            <input type="color" id="fontColor" value="#FFFFFF">
+
+            <label for="opacity">Opacity:</label>
+            <input type="range" id="opacity" min="0" max="1" step="0.01" value="0.7">
+
+            <label for="location">Watermark Location:</label>
+            <select id="location">
+                <option value="top-left">Top Left</option>
+                <option value="top-right">Top Right</option>
+                <option value="center">Center</option>
+            </select>
+
+            <label for="quantity">Quantity:</label>
+            <input type="number" id="quantity" value="1" min="1" max="10">
+        </div>
+
+        <div class="image-preview">
+            <canvas id="canvas"></canvas>
+        </div>
+
+        <button id="downloadBtn">Download Watermarked Images</button>
+    </div>
+
+    <div class="image-thumbnails" id="thumbnails"></div>
+
+    <!-- Include JSZip library -->
+    <script src="https://cdn.jsdelivr.net/npm/jszip@3.7.1/dist/jszip.min.js"></script>
+
+    <script>
+        const imageInput = document.getElementById("imageInput");
+        const watermarkTextInput = document.getElementById("watermarkText");
+        const fontFamilyInput = document.getElementById("fontFamily");
+        const fontSizeInput = document.getElementById("fontSize");
+        const fontColorInput = document.getElementById("fontColor");
+        const opacityInput = document.getElementById("opacity");
+        const locationInput = document.getElementById("location");
+        const quantityInput = document.getElementById("quantity");
+        const canvas = document.getElementById("canvas");
+        const ctx = canvas.getContext("2d");
+        const downloadBtn = document.getElementById("downloadBtn");
+        const thumbnailsContainer = document.getElementById("thumbnails");
+
+        let selectedImages = [];
+        let currentImageIndex = -1;
+
+        // Update canvas with watermark applied
+        function updateCanvas(image) {
+            const watermarkText = watermarkTextInput.value;
+            const fontFamily = fontFamilyInput.value;
+            const fontSize = fontSizeInput.value;
+            const fontColor = fontColorInput.value;
+            const opacity = opacityInput.value;
+            const location = locationInput.value;
+            const quantity = quantityInput.value;
+
+            // Clear the canvas and redraw the image
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
+
+            ctx.globalAlpha = opacity;
+
+            // Add watermark multiple times
+            for (let i = 0; i < quantity; i++) {
+                const x = getWatermarkPosition(location, "x", canvas.width, fontSize, watermarkText);
+                const y = getWatermarkPosition(location, "y", canvas.height, fontSize, watermarkText);
+
+                ctx.font = `${fontSize}px ${fontFamily}`;
+                ctx.fillStyle = fontColor;
+                ctx.fillText(watermarkText, x, y);
+            }
+        }
+
+        // Determine watermark position based on the selected location
+        function getWatermarkPosition(location, axis, canvasSize, fontSize, watermarkText) {
+            const padding = 20;
+            switch (location) {
+                case "top-left":
+                    return padding;
+                case "top-right":
+                    return canvasSize - padding - ctx.measureText(watermarkText).width;
+                case "center":
+                    return (canvasSize - ctx.measureText(watermarkText).width) / 2;
+                default:
+                    return padding;
+            }
+        }
+
+        // Handle image input (including folder)
+        imageInput.addEventListener("change", (e) => {
+            const files = e.target.files;
+
+            selectedImages = [];
+            currentImageIndex = -1;
+            thumbnailsContainer.innerHTML = ""; // Clear existing thumbnails
+
+            // Read each selected image
+            Array.from(files).forEach((file) => {
+                // Check if the file is an image
+                if (file.type.startsWith("image/")) {
+                    const reader = new FileReader();
+                    reader.onload = function (event) {
+                        const img = new Image();
+                        img.onload = function () {
+                            selectedImages.push(img);
+                            
+                            // Create a thumbnail for the image
+                            const thumbnail = document.createElement("img");
+                            thumbnail.src = event.target.result;
+                            thumbnail.addEventListener("click", () => {
+                                currentImageIndex = selectedImages.indexOf(img);
+                                canvas.width = img.width;
+                                canvas.height = img.height;
+                                updateCanvas(img);
+                            });
+                            thumbnailsContainer.appendChild(thumbnail);
+                        };
+                        img.src = event.target.result;
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+        });
+
+        // Update the canvas whenever user changes options
+        [watermarkTextInput, fontFamilyInput, fontSizeInput, fontColorInput, opacityInput, locationInput, quantityInput].forEach(input => {
+            input.addEventListener("input", () => {
+                if (currentImageIndex !== -1) {
+                    updateCanvas(selectedImages[currentImageIndex]);
+                }
+            });
+        });
+
+        // Download all watermarked images as a ZIP
+        downloadBtn.addEventListener("click", async () => {
+            const zip = new JSZip();
+
+            for (let i = 0; i < selectedImages.length; i++) {
+                const image = selectedImages[i];
+
+                // Create a canvas to render the watermarked image
+                const tempCanvas = document.createElement("canvas");
+                const tempCtx = tempCanvas.getContext("2d");
+                tempCanvas.width = image.width;
+                tempCanvas.height = image.height;
+
+                // Apply the watermark
+                updateCanvas(image);
+
+                const imageDataUrl = tempCanvas.toDataURL("image/png");
+                const imageBlob = await fetch(imageDataUrl).then(res => res.blob());
+
+                // Add the image to the ZIP file
+                zip.file(`watermarked-image-${i + 1}.png`, imageBlob);
+            }
+
+            // Generate and download the ZIP file
+            zip.generateAsync({ type: "blob" }).then(function (content) {
+                const a = document.createElement("a");
+                a.href = URL.createObjectURL(content);
+                a.download = "watermarked-images.zip";
+                a.click();
+            });
+        });
+    </script>
+
+</body>
+</html>
