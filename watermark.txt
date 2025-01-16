@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Watermark Generator</title>
     <style>
-       
         .container {
             text-align: center;
             background-color: white;
@@ -78,7 +77,7 @@
         <h1>Watermark Image Generator</h1>
 
         <!-- Image Upload Section -->
-        <input type="file" id="imageInput" accept="image/*" multiple webkitdirectory>
+        <input type="file" id="imageInput" accept="image/*" multiple>
 
         <!-- Watermark Options -->
         <div class="options">
@@ -103,24 +102,6 @@
 
             <label for="opacity">Opacity:</label>
             <input type="range" id="opacity" min="0" max="1" step="0.01" value="0.7">
-
-            <label>Watermark Location (px):</label>
-            <div>
-                <label for="top">Top:</label>
-                <input type="number" id="top" value="20">
-
-                <label for="bottom">Bottom:</label>
-                <input type="number" id="bottom" value="20">
-
-                <label for="left">Left:</label>
-                <input type="number" id="left" value="20">
-
-                <label for="right">Right:</label>
-                <input type="number" id="right" value="20">
-            </div>
-
-            <label for="quantity">Quantity:</label>
-            <input type="number" id="quantity" value="1" min="1" max="10">
         </div>
 
         <div class="image-preview">
@@ -139,11 +120,6 @@
         const fontSizeInput = document.getElementById("fontSize");
         const fontColorInput = document.getElementById("fontColor");
         const opacityInput = document.getElementById("opacity");
-        const topInput = document.getElementById("top");
-        const bottomInput = document.getElementById("bottom");
-        const leftInput = document.getElementById("left");
-        const rightInput = document.getElementById("right");
-        const quantityInput = document.getElementById("quantity");
         const canvas = document.getElementById("canvas");
         const ctx = canvas.getContext("2d");
         const downloadBtn = document.getElementById("downloadBtn");
@@ -159,12 +135,6 @@
             const fontSize = fontSizeInput.value;
             const fontColor = fontColorInput.value;
             const opacity = opacityInput.value;
-            const quantity = quantityInput.value;
-
-            const top = parseInt(topInput.value);
-            const bottom = parseInt(bottomInput.value);
-            const left = parseInt(leftInput.value);
-            const right = parseInt(rightInput.value);
 
             // Clear the canvas and redraw the image
             ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -172,18 +142,16 @@
 
             ctx.globalAlpha = opacity;
 
-            // Add watermark multiple times
-            for (let i = 0; i < quantity; i++) {
-                const x = left + (i * 50); // Optional spacing between watermarks
-                const y = top + (i * 50);  // Optional spacing between watermarks
+            // Set watermark position at 5% of image width and 40% of image height
+            const x = image.width * 0.05; // 5% of image width
+            const y = image.height * 0.4; // 40% of image height
 
-                ctx.font = `${fontSize}px ${fontFamily}`;
-                ctx.fillStyle = fontColor;
-                ctx.fillText(watermarkText, x, y);
-            }
+            ctx.font = `${fontSize}px ${fontFamily}`;
+            ctx.fillStyle = fontColor;
+            ctx.fillText(watermarkText, x, y);
         }
 
-        // Handle image input (including folder)
+        // Handle image input (multiple images)
         imageInput.addEventListener("change", (e) => {
             const files = e.target.files;
 
@@ -220,7 +188,7 @@
         });
 
         // Update the canvas whenever user changes options
-        [watermarkTextInput, fontFamilyInput, fontSizeInput, fontColorInput, opacityInput, topInput, bottomInput, leftInput, rightInput, quantityInput].forEach(input => {
+        [watermarkTextInput, fontFamilyInput, fontSizeInput, fontColorInput, opacityInput].forEach(input => {
             input.addEventListener("input", () => {
                 if (currentImageIndex !== -1) {
                     updateCanvas(selectedImages[currentImageIndex]);
