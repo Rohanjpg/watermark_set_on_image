@@ -5,18 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Watermark Generator</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #f4f4f4;
-            margin: 0;
-            padding: 0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            flex-direction: column;
-        }
-
+       
         .container {
             text-align: center;
             background-color: white;
@@ -25,6 +14,8 @@
             box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
             width: 90%;
             max-width: 600px;
+            overflow: scroll;
+            margin: auto;
         }
 
         h1 {
@@ -136,13 +127,10 @@
             <canvas id="canvas"></canvas>
         </div>
 
-        <button id="downloadBtn">Download Watermarked Images</button>
+        <button id="downloadBtn">Download Watermarked Image</button>
     </div>
 
     <div class="image-thumbnails" id="thumbnails"></div>
-
-    <!-- Include JSZip library -->
-    <script src="https://cdn.jsdelivr.net/npm/jszip@3.7.1/dist/jszip.min.js"></script>
 
     <script>
         const imageInput = document.getElementById("imageInput");
@@ -240,36 +228,16 @@
             });
         });
 
-        // Download all watermarked images as a ZIP
-        downloadBtn.addEventListener("click", async () => {
-            const zip = new JSZip();
-
-            for (let i = 0; i < selectedImages.length; i++) {
-                const image = selectedImages[i];
-
-                // Create a canvas to render the watermarked image
-                const tempCanvas = document.createElement("canvas");
-                const tempCtx = tempCanvas.getContext("2d");
-                tempCanvas.width = image.width;
-                tempCanvas.height = image.height;
-
-                // Apply the watermark
-                updateCanvas(image);
-
-                const imageDataUrl = tempCanvas.toDataURL("image/png");
-                const imageBlob = await fetch(imageDataUrl).then(res => res.blob());
-
-                // Add the image to the ZIP file
-                zip.file(`watermarked-image-${i + 1}.png`, imageBlob);
-            }
-
-            // Generate and download the ZIP file
-            zip.generateAsync({ type: "blob" }).then(function (content) {
+        // Download the watermarked image
+        downloadBtn.addEventListener("click", () => {
+            if (currentImageIndex !== -1) {
+                const image = selectedImages[currentImageIndex];
+                const imageDataUrl = canvas.toDataURL("image/png");
                 const a = document.createElement("a");
-                a.href = URL.createObjectURL(content);
-                a.download = "watermarked-images.zip";
+                a.href = imageDataUrl;
+                a.download = "watermarked-image.png";
                 a.click();
-            });
+            }
         });
     </script>
 
