@@ -82,8 +82,6 @@
 </head>
 <body>
 
-    
-
     <!-- Watermark Generator Content -->
     <div class="container">
         <h1>Watermark Image Generator</h1>
@@ -95,9 +93,6 @@
         <div class="options">
             <label for="watermarkImage">Watermark Image:</label>
             <input type="file" id="watermarkImage" accept="image/*">
-
-            <label for="opacity">Opacity:</label>
-            <input type="range" id="opacity" min="0" max="1" step="0.01" value="0.7">
         </div>
 
         <div class="image-preview">
@@ -112,7 +107,6 @@
     <script>
         const imageInput = document.getElementById("imageInput");
         const watermarkImageInput = document.getElementById("watermarkImage");
-        const opacityInput = document.getElementById("opacity");
         const canvas = document.getElementById("canvas");
         const ctx = canvas.getContext("2d");
         const downloadBtn = document.getElementById("downloadBtn");
@@ -123,24 +117,27 @@
 
         // Update canvas with watermark applied
         function updateCanvas(image) {
-            const opacity = opacityInput.value;
-
             // Clear the canvas and redraw the image
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
 
             if (watermarkImage) {
-                ctx.globalAlpha = opacity;
-
-                // Set watermark position at 5% of image width and 40% of image height
-                const x = image.width * 0.25; // 30% of image width
-                const y = image.height * 0.4; // 40% of image height
+                // Set watermark position at 25% of image width and 40% of image height
+                const x = image.width * 0.25;
+                const y = image.height * 0.4;
 
                 // Resize watermark image if it's too big
-                const watermarkWidth = image.width * 0.2; // 20% of image width
+                const watermarkWidth = image.width * 0.2;
                 const watermarkHeight = watermarkImage.height * (watermarkWidth / watermarkImage.width);
 
+                // Make the watermark clearer by changing opacity
+                ctx.globalAlpha = 1.0; // Set opacity of watermark to fully visible (1.0 for full opacity)
+
+                // Draw the watermark on top of the image
                 ctx.drawImage(watermarkImage, x, y, watermarkWidth, watermarkHeight);
+
+                // Reset the opacity back to normal for other canvas drawings
+                ctx.globalAlpha = 1.0;
             }
         }
 
@@ -200,35 +197,33 @@
             }
         });
 
-        // Update the canvas whenever user changes opacity
-        opacityInput.addEventListener("input", () => {
-            if (selectedImages.length > 0) {
-                updateCanvas(selectedImages[0]);
-            }
-        });
-
         // Download all watermarked images individually
         downloadBtn.addEventListener("click", () => {
             if (selectedImages.length > 0 && watermarkImage) {
-                const opacity = opacityInput.value;
-
                 // Loop over all selected images
                 selectedImages.forEach((image, index) => {
                     const canvasTemp = document.createElement("canvas");
                     const ctxTemp = canvasTemp.getContext("2d");
-                    canvasTemp.width = image.width;
-                    canvasTemp.height = image.height;
+                    canvasTemp.width = image.width; // Keep the original width
+                    canvasTemp.height = image.height; // Keep the original height
 
                     // Draw the image
                     ctxTemp.drawImage(image, 0, 0, canvasTemp.width, canvasTemp.height);
 
-                    // Draw the watermark
-                    ctxTemp.globalAlpha = opacity;
-                    const x = image.width * 0.05;
-                    const y = image.height * 0.4;
-                    const watermarkWidth = image.width * 0.2;
+                    // Calculate watermark size and position
+                    const x = image.width * 0.25; // Position at 25% of the image width
+                    const y = image.height * 0.4; // Position at 40% of the image height
+                    const watermarkWidth = image.width * 0.2; // 20% of image width for watermark width
                     const watermarkHeight = watermarkImage.height * (watermarkWidth / watermarkImage.width);
+
+                    // Make the watermark clearer by changing opacity
+                    ctxTemp.globalAlpha = 1.0; // Set opacity of watermark to fully visible (1.0 for full opacity)
+
+                    // Draw the watermark on top of the image
                     ctxTemp.drawImage(watermarkImage, x, y, watermarkWidth, watermarkHeight);
+
+                    // Reset the opacity back to normal for other canvas drawings
+                    ctxTemp.globalAlpha = 1.0;
 
                     // Convert the canvas to a JPEG and trigger the download
                     canvasTemp.toBlob((blob) => {
