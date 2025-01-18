@@ -5,6 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Watermark Generator</title>
     <style>
+        /* Basic reset */
+        body, html {
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+        }
+
+        /* Main content container */
         .container {
             text-align: center;
             background-color: white;
@@ -69,10 +77,14 @@
         button:hover {
             background-color: #45a049;
         }
+
     </style>
 </head>
 <body>
 
+    
+
+    <!-- Watermark Generator Content -->
     <div class="container">
         <h1>Watermark Image Generator</h1>
 
@@ -81,24 +93,8 @@
 
         <!-- Watermark Options -->
         <div class="options">
-            <label for="watermarkText">Watermark Text:</label>
-            <input type="text" id="watermarkText" placeholder="Enter watermark text">
-
-            <label for="fontFamily">Font Family:</label>
-            <select id="fontFamily">
-                <option value="Times New Roman">Times New Roman</option>
-                <option value="Georgia">Georgia</option>
-                <option value="Palatino">Palatino</option>
-                <option value="Garamond">Garamond</option>
-                <option value="Courier New">Courier New</option>
-                <option value="Arial">Arial</option>
-            </select>
-
-            <label for="fontSize">Font Size:</label>
-            <input type="number" id="fontSize" value="40">
-
-            <label for="fontColor">Font Color:</label>
-            <input type="color" id="fontColor" value="#FFFFFF">
+            <label for="watermarkImage">Watermark Image:</label>
+            <input type="file" id="watermarkImage" accept="image/*">
 
             <label for="opacity">Opacity:</label>
             <input type="range" id="opacity" min="0" max="1" step="0.01" value="0.7">
@@ -108,17 +104,14 @@
             <canvas id="canvas"></canvas>
         </div>
 
-        <button id="downloadBtn">Download Watermarked Image</button>
+        <button id="downloadBtn">Download All Watermarked Images</button>
     </div>
 
     <div class="image-thumbnails" id="thumbnails"></div>
 
     <script>
         const imageInput = document.getElementById("imageInput");
-        const watermarkTextInput = document.getElementById("watermarkText");
-        const fontFamilyInput = document.getElementById("fontFamily");
-        const fontSizeInput = document.getElementById("fontSize");
-        const fontColorInput = document.getElementById("fontColor");
+        const watermarkImageInput = document.getElementById("watermarkImage");
         const opacityInput = document.getElementById("opacity");
         const canvas = document.getElementById("canvas");
         const ctx = canvas.getContext("2d");
@@ -126,29 +119,29 @@
         const thumbnailsContainer = document.getElementById("thumbnails");
 
         let selectedImages = [];
-        let currentImageIndex = -1;
+        let watermarkImage = null;
 
         // Update canvas with watermark applied
         function updateCanvas(image) {
-            const watermarkText = watermarkTextInput.value;
-            const fontFamily = fontFamilyInput.value;
-            const fontSize = fontSizeInput.value;
-            const fontColor = fontColorInput.value;
             const opacity = opacityInput.value;
 
             // Clear the canvas and redraw the image
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
 
-            ctx.globalAlpha = opacity;
+            if (watermarkImage) {
+                ctx.globalAlpha = opacity;
 
-            // Set watermark position at 5% of image width and 40% of image height
-            const x = image.width * 0.05; // 5% of image width
-            const y = image.height * 0.4; // 40% of image height
+                // Set watermark position at 5% of image width and 40% of image height
+                const x = image.width * 0.25; // 30% of image width
+                const y = image.height * 0.4; // 40% of image height
 
-            ctx.font = `${fontSize}px ${fontFamily}`;
-            ctx.fillStyle = fontColor;
-            ctx.fillText(watermarkText, x, y);
+                // Resize watermark image if it's too big
+                const watermarkWidth = image.width * 0.2; // 20% of image width
+                const watermarkHeight = watermarkImage.height * (watermarkWidth / watermarkImage.width);
+
+                ctx.drawImage(watermarkImage, x, y, watermarkWidth, watermarkHeight);
+            }
         }
 
         // Handle image input (multiple images)
@@ -156,7 +149,6 @@
             const files = e.target.files;
 
             selectedImages = [];
-            currentImageIndex = -1;
             thumbnailsContainer.innerHTML = ""; // Clear existing thumbnails
 
             // Read each selected image
@@ -173,7 +165,6 @@
                             const thumbnail = document.createElement("img");
                             thumbnail.src = event.target.result;
                             thumbnail.addEventListener("click", () => {
-                                currentImageIndex = selectedImages.indexOf(img);
                                 canvas.width = img.width;
                                 canvas.height = img.height;
                                 updateCanvas(img);
@@ -187,24 +178,66 @@
             });
         });
 
-        // Update the canvas whenever user changes options
-        [watermarkTextInput, fontFamilyInput, fontSizeInput, fontColorInput, opacityInput].forEach(input => {
-            input.addEventListener("input", () => {
-                if (currentImageIndex !== -1) {
-                    updateCanvas(selectedImages[currentImageIndex]);
-                }
-            });
+        // Handle watermark image upload
+        watermarkImageInput.addEventListener("change", (e) => {
+            const file = e.target.files[0];
+
+            if (file && file.type.startsWith("image/")) {
+                const reader = new FileReader();
+                reader.onload = function (event) {
+                    const img = new Image();
+                    img.onload = function () {
+                        watermarkImage = img;
+
+                        // Redraw the current image with the new watermark
+                        if (selectedImages.length > 0) {
+                            updateCanvas(selectedImages[0]);
+                        }
+                    };
+                    img.src = event.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
         });
 
-        // Download the watermarked image
+        // Update the canvas whenever user changes opacity
+        opacityInput.addEventListener("input", () => {
+            if (selectedImages.length > 0) {
+                updateCanvas(selectedImages[0]);
+            }
+        });
+
+        // Download all watermarked images individually
         downloadBtn.addEventListener("click", () => {
-            if (currentImageIndex !== -1) {
-                const image = selectedImages[currentImageIndex];
-                const imageDataUrl = canvas.toDataURL("image/png");
-                const a = document.createElement("a");
-                a.href = imageDataUrl;
-                a.download = "watermarked-image.png";
-                a.click();
+            if (selectedImages.length > 0 && watermarkImage) {
+                const opacity = opacityInput.value;
+
+                // Loop over all selected images
+                selectedImages.forEach((image, index) => {
+                    const canvasTemp = document.createElement("canvas");
+                    const ctxTemp = canvasTemp.getContext("2d");
+                    canvasTemp.width = image.width;
+                    canvasTemp.height = image.height;
+
+                    // Draw the image
+                    ctxTemp.drawImage(image, 0, 0, canvasTemp.width, canvasTemp.height);
+
+                    // Draw the watermark
+                    ctxTemp.globalAlpha = opacity;
+                    const x = image.width * 0.05;
+                    const y = image.height * 0.4;
+                    const watermarkWidth = image.width * 0.2;
+                    const watermarkHeight = watermarkImage.height * (watermarkWidth / watermarkImage.width);
+                    ctxTemp.drawImage(watermarkImage, x, y, watermarkWidth, watermarkHeight);
+
+                    // Convert the canvas to a JPEG and trigger the download
+                    canvasTemp.toBlob((blob) => {
+                        const a = document.createElement("a");
+                        a.href = URL.createObjectURL(blob);
+                        a.download = `watermarked-image-${index + 1}.jpg`;  // Change file extension to .jpg
+                        a.click();
+                    }, 'image/jpeg');  // Ensure the blob is created as JPEG
+                });
             }
         });
     </script>
