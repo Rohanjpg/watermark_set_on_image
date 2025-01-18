@@ -113,6 +113,7 @@
         const thumbnailsContainer = document.getElementById("thumbnails");
 
         let selectedImages = [];
+        let imageNames = [];  // Array to store original file names
         let watermarkImage = null;
 
         // Update canvas with watermark applied
@@ -123,8 +124,8 @@
 
             if (watermarkImage) {
                 // Set watermark position at 25% of image width and 40% of image height
-                const x = image.width * 0.25;
-                const y = image.height * 0.4;
+                const x = image.width * 0.65;
+                const y = image.height * 0.7;
 
                 // Resize watermark image if it's too big
                 const watermarkWidth = image.width * 0.2;
@@ -146,6 +147,7 @@
             const files = e.target.files;
 
             selectedImages = [];
+            imageNames = []; // Reset image names
             thumbnailsContainer.innerHTML = ""; // Clear existing thumbnails
 
             // Read each selected image
@@ -157,6 +159,7 @@
                         const img = new Image();
                         img.onload = function () {
                             selectedImages.push(img);
+                            imageNames.push(file.name);  // Save the original file name
                             
                             // Create a thumbnail for the image
                             const thumbnail = document.createElement("img");
@@ -211,8 +214,8 @@
                     ctxTemp.drawImage(image, 0, 0, canvasTemp.width, canvasTemp.height);
 
                     // Calculate watermark size and position
-                    const x = image.width * 0.25; // Position at 25% of the image width
-                    const y = image.height * 0.4; // Position at 40% of the image height
+                    const x = image.width * 0.65; // Position at 25% of the image width
+                    const y = image.height * 0.7; // Position at 40% of the image height
                     const watermarkWidth = image.width * 0.2; // 20% of image width for watermark width
                     const watermarkHeight = watermarkImage.height * (watermarkWidth / watermarkImage.width);
 
@@ -229,7 +232,8 @@
                     canvasTemp.toBlob((blob) => {
                         const a = document.createElement("a");
                         a.href = URL.createObjectURL(blob);
-                        a.download = `watermarked-image-${index + 1}.jpg`;  // Change file extension to .jpg
+                        // Use the original file name for the watermarked image download
+                        a.download = `${imageNames[index].replace(/\.[^/.]+$/, "")}-watermarked.jpg`;  
                         a.click();
                     }, 'image/jpeg');  // Ensure the blob is created as JPEG
                 });
